@@ -1,2 +1,2 @@
-# smORFs
-project for identifying smorfs in orfs
+# MRes-Big-Data-Biology
+Research project under supervision of Owen Rackham
