@@ -1,38 +1,45 @@
 library(GEOquery)
 library(DESeq2)
+library(dplyr)
 
-#reads raw counts for GSE273464 
-count_table <- read.csv("GSE273464_raw_counts_GRCh38.p13_NCBI.tsv", header = TRUE, sep = "\t")
-head(count_table)
-#changes the raw counts to  data.frame
-as.data.frame(count_table)
-dim(count_table)
+#read Owens raw counts and sample-info
+counts <- read.csv("rna_counts.txt", sep = "\t", header = TRUE)
+df <- as.data.frame(counts)
 
-#reads design description for GSE273464
-design_table <- read.csv("design_tags.csv", header = TRUE)
-#changes row names in design_table to match column names in counts_table
-colnames(design_table) <- c("GeneID", "condition")
-colnames(design_table)
+info <- read.csv("sample_info.txt", sep = "\t")
 
-#removed gene_id column to stop error in DESeq matrix. put gene_ids in a new file
-gene_ids <- count_table$GeneID
-count_table_clean <- count_table[, -1]
+dds <- DESeqDataSetFromMatrix(countData = counts,
+                              colData = info,
+                              design = ~Condition)
 
-#check column for counts matches row for data_info
-ncol(count_table)
-nrow(design_table)
 
-#construct DeSeq dataset
+
+
+
+#reading the .tab file and transforming so all the values are in separate columns
+tab <- read.delim("GSE273142.tab", sep = "\t", header = TRUE, strip.white = TRUE)
+#changing tab file downloaded from GEO to a .csv
+write.csv(tab, file = "GSE273142.csv", row.names = FALSE)
+head(tab)
+
+#changed column names to match design_GSE273142
+colnames(tab) <- c("GeneID", "GSM8422516", "GSM8422517", "GSM8422518", "GSM8422519", "GSM8422520", "GSM8422521")
+
+#create data.frame
+as.data.frame(tab)
+
+#read design .csv 
+design <- read.csv("design_GSE273142.csv", header = TRUE)
+
+#removes GeneID column ready for DeSeq2
+gene_ids <- tab$GeneID
+count_table_clean <- tab[, -1]
+
+
+#construct DeSeq2 dataset
 dds <- DESeqDataSetFromMatrix(countData = count_table_clean,
-                              colData = design_table,
+                              colData = design_clean,
                               design = ~condition)
 
-dds
-
-#setting factor level
-dds$condition <- relevel(dds$condition, ref = "PBS")
-
-dds$condition
-
-dds <- DESeq(dds)
-res <- results(dds)
+rownames(design_clean)
+rownames(count_table_clean)
