@@ -1,29 +1,29 @@
 library(GEOquery)
 library(DESeq2)
+
 library(dplyr)
 
 #read Owens raw counts and sample-info
-counts <- read.csv("rna_counts.txt", sep = "\t", header = TRUE)
-df <- as.data.frame(counts)
+rna <- read.delim("rna_counts.txt", sep = "\t", header = TRUE)
 
-info <- read.csv("sample_info.txt", sep = "\t")
+coldata <- read.delim("sample_info.txt", sep = "\t")
+coldata <-as.data.frame(apply(coldata, 2, as.factor))
+head(coldata)
 
-dds <- DESeqDataSetFromMatrix(countData = counts,
-                              colData = info,
+all(colnames(rna) == rownames(coldata))
+colnames(rna)
+rownames(coldata)
+
+dds <- DESeqDataSetFromMatrix(countData = rna,
+                              colData = coldata,
                               design = ~Condition)
 
 
-
-
-
-#reading the .tab file and transforming so all the values are in separate columns
-tab <- read.delim("GSE273142.tab", sep = "\t", header = TRUE, strip.white = TRUE)
-#changing tab file downloaded from GEO to a .csv
-write.csv(tab, file = "GSE273142.csv", row.names = FALSE)
-head(tab)
-
 #changed column names to match design_GSE273142
-colnames(tab) <- c("GeneID", "GSM8422516", "GSM8422517", "GSM8422518", "GSM8422519", "GSM8422520", "GSM8422521")
+colnames(rna) <- c("GeneID", "GSM8422516", "GSM8422517", "GSM8422518", "GSM8422519", "GSM8422520", "GSM8422521")
+
+colnames(coldata)|>
+    select(c("Pao24RIBO24hpA5R1001trimmedL29NoAbundant.fastq.gzAligned.sortedByCoord.out.bam", "Pao27RIBO24hpA10R1001trimmedL29NoAbundant.fastq.gzAligned.sortedByCoord.out.bam	2", "Pao34RIBO24hpA15R1001trimmedL29NoAbundant.fastq.gzAligned.sortedByCoord.out.bam", "Pao41RIBO24hpA20R1001trimmedL29NoAbundant.fastq.gzAligned.sortedByCoord.out.bam", "Pao24RIBOBSLpA1R1001trimmedL29NoAbundant.fastq.gzAligned.sortedByCoord.out.bam", "Pao27RIBOBSLpA6R1001trimmedL29NoAbundant.fastq.gzAligned.sortedByCoord.out.bam", "Pao34RIBOBSLpA11R1001trimmedL29NoAbundant.fastq.gzAligned.sortedByCoord.out.bam", "Pao41RIBOBSLpA16R1001trimmedL29NoAbundant.fastq.gzAligned.sortedByCoord.out.bam"))
 
 #create data.frame
 as.data.frame(tab)
