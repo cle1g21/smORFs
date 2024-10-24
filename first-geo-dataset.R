@@ -2,6 +2,8 @@ library(GEOquery)
 library(DESeq2)
 library(dplyr)
 
+setwd("/lyceum/cle1g21/smORFs/")
+
 #read Owens raw counts and sample-info
 rna <- read.delim("rna_counts.txt", sep = "\t", header = TRUE)
 
