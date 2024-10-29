@@ -94,18 +94,62 @@ head(coldata)
 class(coldata$GeneID)
 class(coldata$Condition)
 
+#remove GeneID column
+gene_ids <- countdata$GeneID
+countdata_clean <- countdata[, -1]
+colnames(countdata_clean)
+
 #check that sample names match
-all(coldata$GeneID == colnames(countdata))
-
-colnames(countdata)
-rownames(coldata)
-
+colnames(coldata)[1] <- "GeneID"
+colnames(coldata)
 head(coldata)
+colnames(countdata_clean)
 
-length(coldata$GeneID)
-length(colnames(countdata))
+identical(colnames(countdata_clean), rownames(coldata)) #this worked
+rownames(coldata) <- colnames(countdata_clean) #this worked
 
-rownames(coldata) <- coldata$GeneID
+coldata <- data.frame(Condition = coldata$Condition)
+rownames(coldata) <- rownames(coldata)  # Ensuring row names are still sample IDs
+
+coldata <- coldata[, "Condition", drop = FALSE]
+
+
+dds <- DESeqDataSetFromMatrix(countData = countdata_clean,
+                              colData = coldata,
+                              design = ~Condition)
+dds
+
+#PCA
+rld <- rlog(dds)
+#png(filename = "pca.png", width = 600, height = 600) #save PCA plot
+plotPCA(rld, intgroup = "Condition")
+#dev.off()
+
+dds <- DESeq(dds)
+res <- results(dds)
+print(res)
+
+#filters res by padj, keeping only those with padj < 0.05. then extracts rownames of those < 0.05 padj
+resOrdered <- rownames(res[which(res$padj < 0.05),])
+res_sig <- res[which(res$padj < 0.05),]
+res_sig <- as.data.frame(res_sig)          # Convert to data frame
+res_sig$GeneID <- rownames(res_sig)        # Add GeneID column with row names
+head(res_sig)  # View the top rows
+
+head(resOrdered)
+
+min(res$padj, na.rm = TRUE)
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -179,9 +223,9 @@ dds
 
 #PCA
 rld <- rlog(dds)
-#png(filename = "pca.png", width = 600, height = 600) #save PCA plot
+png(filename = "pca.png", width = 600, height = 600) #save PCA plot
 plotPCA(rld, intgroup = "Condition")
-# dev.off()
+dev.off()
 
 #make sure comparison is against control
 dds$Condition <-relevel(dds$Condition, ref = "CTRL")
