@@ -79,15 +79,33 @@ coldata <- read.csv("/lyceum/cle1g21/smORFs/coldata", sep = "\t", header = TRUE)
 
 
 ####continue from here
- 
 
+#read countdata
+countdata <- read.delim("GSE268366_raw_counts_GRCh38.p13_NCBI.tsv", sep = "\t", header = TRUE)
+head(countdata)
+#read coldata
+coldata <- read.csv("GSE268366_coldata.csv", sep = "\t")
+#renames coldata column X...Gen to GeneID
+coldata <- rename(coldata, "GeneID" = "X...Gen")
 
+#changes the second column in coldata to factors using factor() function. DESeq2 requires the design variables (columns in coldata) to be factors
+coldata[,2] <-factor(coldata[,2])
+head(coldata)
+class(coldata$GeneID)
+class(coldata$Condition)
 
+#check that sample names match
+all(coldata$GeneID == colnames(countdata))
 
+colnames(countdata)
+rownames(coldata)
 
+head(coldata)
 
+length(coldata$GeneID)
+length(colnames(countdata))
 
-
+rownames(coldata) <- coldata$GeneID
 
 
 
