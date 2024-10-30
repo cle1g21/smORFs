@@ -1,6 +1,6 @@
 # ** dataset GSE2683666: https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE2683666 **
 # ** current dataset I am working on to perform DESeq2 analysis. checked PCA and it is acceptable, in the process of transforming the data to run DESeq2 **
-
+# ** problem matching gene ID to res from DESeq2 to get names of significant genes to match to nuORFs **
 library(GEOquery)
 library(DESeq2)
 library(dplyr)
@@ -10,4 +10,45 @@ cts <- as.matrix(read.csv("GSE268366_raw_counts_GRCh38.p13_NCBI.tsv", sep = "\t"
 head(cts)
 
 #read coldata
-coldata <- read.csv("GSE268366_coldata.csv", sep = "\t")
+coldata <- read.table("GSE268366_coldata.csv", header = TRUE, sep = ",")
+
+#changes the second column in coldata to factors using factor() function. DESeq2 requires the design variables (columns in coldata) to be factors
+coldata[,2] <-factor(coldata[,2])
+head(coldata)
+class(coldata$GeneID)
+class(coldata$Condition)
+
+#remove GeneID column
+gene_ids <- cts[, "GeneID"]
+cts_clean <- cts[, -1]
+
+#sets the row names of coldata (geneIDs) to the column names of cts_clean (geneIDs)
+rownames(coldata) <- colnames(cts_clean)
+
+
+#check that sample names match
+all(colnames(cts_clean) == rownames(coldata))
+colnames(coldata)
+colnames(cts_clean)
+
+dds <- DESeqDataSetFromMatrix(countData = cts_clean,
+                              colData = coldata,
+                              design = ~Condition)
+dds
+
+#PCA plot to check replicates
+rld <- rlog(dds)
+#png(filename = "pca.png", width = 600, height = 600) #save PCA plot
+plotPCA(rld, intgroup = "Condition")
+#dev.off()
+
+dds <- DESeq(dds)
+res <- results(dds)
+print(res)
+
+summary(res)  # Provides a summary of the results object
+
+#filters res by padj, keeping only those with padj < 0.05. then extracts rownames of those < 0.05 padj
+resOrdered <- res[which(res$padj < 0.05),]
+resOrdered$GeneID <- gene_ids #ERROR length of gene_ids and DESeq2 reuslts do not match
+head(resOrdered)
