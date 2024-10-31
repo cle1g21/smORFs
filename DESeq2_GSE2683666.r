@@ -7,6 +7,7 @@ library(dplyr)
 
 #read GEO dataset GSE2683666 counts
 cts <- as.matrix(read.csv("GSE268366_raw_counts_GRCh38.p13_NCBI.tsv", sep = "\t", header = TRUE))
+rownames(cts) <- cts[, "GeneID"]
 head(cts)
 
 #read coldata
@@ -18,6 +19,7 @@ head(coldata)
 class(coldata$GeneID)
 class(coldata$Condition)
 
+colnames(coldata) <- c("SampleID", "Condition")
 #remove GeneID column
 gene_ids <- cts[, "GeneID"]
 cts_clean <- cts[, -1]
@@ -28,7 +30,8 @@ rownames(coldata) <- colnames(cts_clean)
 
 #check that sample names match
 all(colnames(cts_clean) == rownames(coldata))
-colnames(coldata)
+rownames(coldata) <- coldata$SampleID
+rownames(coldata) 
 colnames(cts_clean)
 
 dds <- DESeqDataSetFromMatrix(countData = cts_clean,
@@ -52,3 +55,26 @@ summary(res)  # Provides a summary of the results object
 resOrdered <- res[which(res$padj < 0.05),]
 resOrdered$GeneID <- gene_ids #ERROR length of gene_ids and DESeq2 reuslts do not match
 head(resOrdered)
+
+#changing entrez to ensembl
+
+BiocManager::install("AnnotationDbi")
+BiocManager::install("org.Hs.eg.db")
+# For human genes
+
+library(AnnotationDbi)
+library(org.Hs.eg.db)
+# Convert Entrez IDs to Ensembl IDs
+ensembl_ids <- mapIds(
+    org.Hs.eg.db,
+    keys = rownames(res),
+    column ="ENSEMBL",
+    keytype ="ENTREZID",
+    multiVals ="first"
+    # Use "first" to handle multiple mappings
+    )
+    # Add Ensembl IDs as a new column in the DESeq2 results
+res$Ensembl <- ensembl_ids
+ 
+# Print the updated result
+head(res)
