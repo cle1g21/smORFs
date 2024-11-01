@@ -50,3 +50,5 @@ ncORFs$Gene_id
 #filter resOrdered to only include genes in nuORFs
 resOrdered_nuORFs <- resOrdered[which(resOrdered %in% ncORFs$Gene_id)]
 resOrdered_nuORFs
+dim(resOrdered_nuORFs)
+str(resOrdered_nuORFs)
