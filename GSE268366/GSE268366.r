@@ -80,7 +80,7 @@ res$Ensembl <- ensembl_ids
 head(res)
 
 # creates a file of the DESeq2 results for GSE268366 dataset
-write.table(res, file = "DESeq2results.txt", sep = "\t", row.names = FALSE)
+write.table(res, file = "DESeq2results.txt", sep = "\t", row.names = TRUE)
 
 #filters res by padj, keeping the rows from the res data frame where the padj value is less than 0.05
 resOrdered <- res[which(res$padj < 0.05), ]

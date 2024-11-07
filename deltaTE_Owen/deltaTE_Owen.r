@@ -45,7 +45,7 @@ print(res) # prints the first few rows of the DESeq2 results
 summary(res)  # provides a summary of the DESeq2 results 
 
 #write results from DESeq2  into file
-write.table(res, file = "DESeq2results.txt", sep = "\t", row.names = FALSE)
+write.table(res, file = "DESeq2results.txt", sep = "\t", row.names = TRUE)
 
 #filters res by padj, keeping only those with padj < 0.05. then extracts rownames of those < 0.05 padj
 resOrdered <- res[which(res$padj < 0.05), ]
