@@ -1,10 +1,10 @@
-#** no matched nuORFs to DESeq2 **
+#** no matched nuORFs to DESeq2 DEGs **
 
 # Long time doing DESeq2 (6 minutes). Showed following:
 #-- replacing outliers and refitting for 8878 genes
 #-- DESeq argument 'minReplicatesForReplace' = 7
+#-- original counts are preserved in counts(dds)
 
--- original counts are preserved in counts(dds)
 library(GEOquery)
 library(DESeq2)
 library(dplyr)
@@ -99,9 +99,9 @@ head(ncORFs)
 noNA_resOrdered <- resOrdered[!is.na(rownames(resOrdered)), ]
 
 # subset the resOrdered data frame to include only the rows where the Ensembl column is in ncORFs$Gene_id. so the resOrdered only include genes in the nuORFs list
-resOrdered_nuORFs <- noNA_resOrdered[rownames(resOrdered) %in% ncORFs$Gene_id, ]
+resOrdered_nuORFs <- noNA_resOrdered[rownames(noNA_resOrdered) %in% ncORFs$Gene_id, ]
 View(resOrdered_nuORFs)
 str(resOrdered_nuORFs)
 
 # save file of matching nuORFs
-write.table(nuORFs_matched_ESCA, file = "/lyceum/cle1g21/smORFs/TCGA/nuORFs_matched_ESCA.txt", sep = "\t", row.names = FALSE)
+write.table(nuORFs_matched_ESCA, file = "/lyceum/cle1g21/smORFs/TCGA/nuORFs_matched_ESCA.txt", sep = "\t", row.names = TRUE)
