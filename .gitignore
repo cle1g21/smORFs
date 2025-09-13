@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 *.sif
+
+# huge artifacts
+my_environment.RData
+*.sif
