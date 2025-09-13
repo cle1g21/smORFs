@@ -1,32 +1,35 @@
-# Change ensmbl IDs to gene symbols ->
-# Selected top 15 up and down regulated ->
-# Ggplot for volcano plot for DESEQ2 results for BRCA
-
-# Load libraries
-library(tidyverse)
+library(tibble)
+library(ggplot2)
 library(ggrepel)
-library(org.Hs.eg.db)
-library(biomaRt)
 
-# read in DESeq2 results for BRCA dataset
-res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/DESeq2results_BRCA_filtered_variants.txt", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
+res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/GBM/Outputs/DEGS_lncRNAs_GBM.csv", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
 View(res)
 
-# Map Ensembl IDs to Gene Symbols
-gene_symbols <- mapIds(
-  org.Hs.eg.db,           
-  keys = row.names(res),  
-  column = "SYMBOL",        # Retrieve gene symbols
-  keytype = "ENSEMBL",      # Use Ensembl IDs as input
-  multiVals = "first"       # Use the first match if multiple exist
-)
+# Match the DESeq2 results to the nuORFs dataset
+# Filters res by padj, keeping the rows from the res data frame where the padj value is less than 0.05
+resOrdered <- res[which(res$padj < 0.05), ]
+head(resOrdered)
 
-# Add gene symbols to the DESeq2 results (res)
-res$gene_symbol <- gene_symbols
+# read in nuORFs dataset from https://smorfs.ddnetbio.com/
+ncORFs <- read.csv("/lyceum/cle1g21/smORFs/nuORF_atlas.csv")
+head(ncORFs)
 
-# Replace missing gene symbols with Ensembl IDs
-res$label <- ifelse(is.na(res$gene_symbol), rownames(res), res$gene_symbol)
+# filter ncORFs to remove rows where NAs are found in rownames (gene name) of resOrdered and saved to a dataset called noNA_resOrdered. need to do this because the next line gives an error if NAs are found
+noNA_resOrdered <- resOrdered[!is.na(rownames(resOrdered)), ]
 
+# subset the resOrdered data frame to include only the rows where the Ensembl column is in ncORFs$Gene_id. so the resOrdered only include genes in the nuORFs list
+resOrdered_nuORFs <- noNA_resOrdered[rownames(noNA_resOrdered) %in% ncORFs$Gene_id, ]
+View(resOrdered_nuORFs)
+str(resOrdered_nuORFs)
+
+# save file of matching nuORFs
+write.table(resOrdered_nuORFs, file = "/lyceum/cle1g21/smORFs/TCGA/GBM/Outputs/lncRNAs_nuORFs_matched_GBM.txt", sep = "\t", row.names = TRUE)
+
+res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/GBM/Outputs/lncRNAs_nuORFs_matched_GBM.txt", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
+View(res)
+nrow(res)
+
+# Visualisation of lncRNA nuORFs in volcano plot
 # Selects top 15 DEGs
 top15_upreg <- res |> 
   filter(padj < 0.05, log2FoldChange < 0) |>         # Significant down-regulated genes in BRCA
@@ -34,14 +37,15 @@ top15_upreg <- res |>
   slice_head(n = 15) |>                    # Top 15 genes
   mutate(Expression = "downregulated") |>                
   rownames_to_column(var = "Gene_ID")           
-"ENSG00000034971" %in% row.names(res) # Checked this worked by confirming presence of top15DEG in res
 
 top15_downreg <- res |> 
   filter(padj < 0.05, log2FoldChange > 0) |>         # Significant up-regulated genes in BRCA
   arrange(desc(log2FoldChange)) |>                  # Arrange by largest logFC
   slice_head(n = 15) |>                    # Top 15 genes
-  mutate(Expression = "upregualated") |>               
+  mutate(Expression = "upregulated") |>               
   rownames_to_column(var = "Gene_ID")
+
+write.csv(top15_downreg, "/lyceum/cle1g21/smORFs/TCGA/GBM/Outputs/top15upreg_lncRNA_matched_nuORFs.csv")
 
 # Combining the top 15 DEGs for labelling
 top30 <- bind_rows(top15_upreg, top15_downreg)
@@ -83,15 +87,4 @@ volcano <- ggplot() +
 
 print(volcano)
 
-ggsave("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/Figures/volcano_DEGS_2.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
-
-
-# Count significantly upregulated DEGs (FDR < 0.05 and log2FC > 1)
-n_up <- sum(res$padj < 0.05 & res$log2FoldChange > 1, na.rm = TRUE)
-
-# Count significantly downregulated DEGs (FDR < 0.05 and log2FC < -1)
-n_down <- sum(res$padj < 0.05 & res$log2FoldChange < -1, na.rm = TRUE)
-
-# Combine results
-cat("Significantly upregulated DEGs:", n_up, "\n")
-cat("Significantly downregulated DEGs:", n_down, "\n")
+ggsave("/lyceum/cle1g21/smORFs/TCGA/GBM/Outputs/Figures/volcano_lncRNAs_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")

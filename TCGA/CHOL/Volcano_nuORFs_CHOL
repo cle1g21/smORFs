@@ -1,6 +1,3 @@
-# Same code as volcano for DEGs but instead used matched nuORFs differentially expressed in CHOL
-# used fread as read.delim too slow -> have to move first column back to row.names
-
 # Load libraries
 library(data.table)
 library(tidyverse)
@@ -8,13 +5,8 @@ library(ggrepel)
 library(org.Hs.eg.db)
 
 # read in DESeq2 results for BRCA dataset
-res <- fread("/lyceum/cle1g21/smORFs/TCGA/CHOL/nuORFs_matched_CHOL.txt")
+res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/CHOL/Outputs/nuORFs_matched_CHOL.txt")
 View(res)
-
-# Convert the first column to row names
-res <- as.data.frame(res)  # Convert to a data frame
-rownames(res) <- res[, 1]  # Set first column as row names
-res <- res[, -1]  # Remove the first column since it's now row names
 
 # Map Ensembl IDs to Gene Symbols
 gene_symbols <- mapIds(
@@ -86,4 +78,4 @@ volcano <- ggplot() +
 
 print(volcano)
 
-ggsave("/lyceum/cle1g21/smORFs/TCGA/CHOL/volcano_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
+ggsave("/lyceum/cle1g21/smORFs/TCGA/CHOL/Outputs/Figures/volcano_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")

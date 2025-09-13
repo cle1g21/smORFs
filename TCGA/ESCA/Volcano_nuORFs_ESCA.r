@@ -1,7 +1,3 @@
-# Volcano nuORFs
-# Same code as volcano for DEGs but instead used matched nuORFs differentially expressed in CHOL
-# used fread as read.delim too slow -> have to move first column back to row.names
-
 # Load libraries
 library(data.table)
 library(tidyverse)
@@ -9,13 +5,8 @@ library(ggrepel)
 library(org.Hs.eg.db)
 
 # read in DESeq2 results for CESC dataset
-res <- fread("/lyceum/cle1g21/smORFs/TCGA/ESCA/nuORFs_matched_ESCA.txt")
+res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/ESCA/Outputs/nuORFs_matched_ESCA.txt")
 View(res)
-
-# Convert the first column to row names
-res <- as.data.frame(res)  # Convert to a data frame
-rownames(res) <- res[, 1]  # Set first column as row names
-res <- res[, -1]  # Remove the first column since it's now row names
 
 # Map Ensembl IDs to Gene Symbols
 gene_symbols <- mapIds(
@@ -31,6 +22,8 @@ res$gene_symbol <- gene_symbols
 
 # Replace missing gene symbols with Ensembl IDs
 res$label <- ifelse(is.na(res$gene_symbol), rownames(res), res$gene_symbol)
+
+write.table(res, file = "/lyceum/cle1g21/smORFs/TCGA/ESCA/Outputs/nuORFs_gene_symbols_ESCA.csv", sep = "\t", row.names = TRUE)
 
 # Selects top 15 DEGs
 top15_upreg <- res |> 
@@ -87,4 +80,4 @@ volcano <- ggplot() +
 
 print(volcano)
 
-ggsave("/lyceum/cle1g21/smORFs/TCGA/ESCA/volcano_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
+ggsave("/lyceum/cle1g21/smORFs/TCGA/ESCA/Outputs/Figures/volcano_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")

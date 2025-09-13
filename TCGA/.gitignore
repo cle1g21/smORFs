@@ -1,0 +1,53 @@
+cat >> .gitignore <<'EOF'
+
+# ---- R / RStudio ----
+.Rproj.user/
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+.Rprof
+.Renviron
+
+# ---- Project artifacts ----
+Outputs/
+*/Outputs/
+*.rds
+*.Rds
+*.rdata
+*.RData
+*.qs
+*.fst
+
+# big/intermediate data & caches
+*.h5
+*.h5ad
+*.loom
+*.mtx
+*.npz
+*.parquet
+*.feather
+.cache/
+cache/
+*.tmp
+*.bak
+
+# images (keep only curated)
+*.png
+*.pdf
+*.svg
+*.jpg
+*.jpeg
+figures/
+*/figures/
+
+# IDE/system noise
+.DS_Store
+Thumbs.db
+
+# secrets / env
+.env
+*.key
+*.pem
+*.crt
+*.token

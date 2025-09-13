@@ -1,7 +1,3 @@
-# Volcano nuORFs
-# Same code as volcano for DEGs but instead used matched nuORFs differentially expressed in CHOL
-# used fread as read.delim too slow -> have to move first column back to row.names
-
 # Load libraries
 library(data.table)
 library(tidyverse)
@@ -9,7 +5,7 @@ library(ggrepel)
 library(org.Hs.eg.db)
 
 # read in DESeq2 results for KICH dataset
-res <- fread("/lyceum/cle1g21/smORFs/TCGA/KICH/nuORFs_matched_KICH.txt")
+res <- fread("/lyceum/cle1g21/smORFs/TCGA/KICH/Outputs/nuORFs_matched_KICH.txt")
 View(res)
 
 # Convert the first column to row names
@@ -31,6 +27,8 @@ res$gene_symbol <- gene_symbols
 
 # Replace missing gene symbols with Ensembl IDs
 res$label <- ifelse(is.na(res$gene_symbol), rownames(res), res$gene_symbol)
+
+write.table(res, file = "/lyceum/cle1g21/smORFs/TCGA/KICH/Outputs/nuORFs_gene_symbols_KICH.csv", sep = "\t", row.names = TRUE)
 
 # Selects top 15 DEGs
 top15_upreg <- res |> 
@@ -87,4 +85,4 @@ volcano <- ggplot() +
 
 print(volcano)
 
-ggsave("/lyceum/cle1g21/smORFs/TCGA/KICH/volcano_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
+ggsave("/lyceum/cle1g21/smORFs/TCGA/KICH/Output/Figures/volcano_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")

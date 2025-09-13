@@ -1,14 +1,19 @@
-# Compelted - breast cancer main forcus for immunopepdomics data
+# Completed - breast cancer main focus for immunopepdomics data
+# DEGs using DESeq2 - write file DESeq2results_BRCA.txt
+# Remove variants from res - write file DESeq2results_BRCA_filtered_variants.txt
+# Filter res to only include nuORFs - write file nuORFs_matched_BRCA.txt
+# plotCounts using res and top15upreg_lncRNA_matched_nuORFs.csv
 
 library(GEOquery)
 library(DESeq2)
 library(dplyr)
 library(AnnotationDbi)
 library(org.Hs.eg.db)
+library(ggplot2)
 
 cts <- read.csv("/mainfs/ddnb/TCGA_data/full_TCGA-BRCA_matrix.csv")
 meta <- read.csv("/mainfs/ddnb/TCGA_data/full_TCGA-BRCA_meta.csv")
-#View(cts)
+View(cts)
 
 # Setup cts ----
 # Set the row names to Gene name
@@ -70,6 +75,9 @@ dds <- DESeqDataSetFromMatrix(countData = cts_clean,
                               design = ~Condition)
 dds
 
+ncol(dds)
+table(dds$Condition)
+
 #PCA plot to check replicates
 #rld <- rlog(dds)
 #png(filename = "pca.png", width = 600, height = 600) #save PCA plot
@@ -78,16 +86,25 @@ dds
 
 # Run DESeq2
 dds <- DESeq(dds) 
+saveRDS(dds, file = paste0("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/dds.rds"))
+
+
+# # save dds object to enviroment
+# saveRDS(dds, file = "dds.rds")
+# # Load dds object
+# dds <- readRDS("dds.rds")
+# save.image("my_environment.RData")
+
 res <- results(dds)
 print(res) # prints the first few rows of the DESeq2 results
 summary(res)  # provides a summary of the DESeq2 results 
 
 # creates a file of the DESeq2 results for GSE268366 dataset
-write.table(res, file = "/lyceum/cle1g21/smORFs/TCGA/BRCA/DESeq2results_BRCA.txt", sep = "\t", row.names = TRUE)
+write.table(res, file = "/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/DESeq2results_BRCA.txt", sep = "\t", row.names = TRUE)
 
 # Remove full stop and following text from DESeq2 gene IDs
 # Step 1: Read the text file so you dont have to reperform DESeq2 to get res object
-res <- read.table("/lyceum/cle1g21/smORFs/TCGA/BRCA/DESeq2results_BRCA.txt", header = TRUE, row.names = 1, sep = "\t", stringsAsFactors = FALSE)
+res <- read.table("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/DESeq2results_BRCA.txt", header = TRUE, row.names = 1, sep = "\t", stringsAsFactors = FALSE)
 View(res)
 
 # Keeps only rows where all values are complete (no NAs)
@@ -111,7 +128,7 @@ res$GeneID <- NULL  # Remove the GeneID column since it's now row names
 View(res)
 
 # Save the cleaned dataset for matching to nuORFs
-write.table(res, "/lyceum/cle1g21/smORFs/TCGA/BRCA/DESeq2results_BRCA_filtered_variants.txt", sep = "\t", quote = FALSE, row.names = TRUE)
+write.table(res, "/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/DESeq2results_BRCA_filtered_variants.txt", sep = "\t", quote = FALSE, row.names = TRUE)
 
 # Match the DESeq2 results to the nuORFs dataset
 # Filters res by padj, keeping the rows from the res data frame where the padj value is less than 0.05
@@ -131,4 +148,58 @@ View(resOrdered_nuORFs)
 str(resOrdered_nuORFs)
 
 # save file of matching nuORFs
-write.table(resOrdered_nuORFs, file = "/lyceum/cle1g21/smORFs/TCGA/BRCA/nuORFs_matched_BRCA.txt", sep = "\t", row.names = TRUE)
+write.table(resOrdered_nuORFs, file = "/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/nuORFs_matched_BRCA.txt", sep = "\t", row.names = TRUE)
+
+# apply filter only keeping lncRNAs with low expression in control so no off target effects if they are seen in immunopeptodmics data
+# 1st plot counts
+# 2nd volcano plots -----------------------------------------------------------------------------
+
+# For gene titles in count plots:
+rownames(dds) <- sub("\\..*", "", rownames(dds))  # Remove everything after the first dot
+
+# Attempt for top 15 upregulated from volcano plot
+# Load the top15_upreg CSV file
+top15_upreg <- read.csv("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/top15upreg_lncRNA_matched_nuORFs.csv", header = TRUE)
+
+top15_upreg_genes <- top15_upreg$Gene_ID
+top15_upreg_label <- top15_upreg$label
+
+# Save plot as PNG
+png("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/Figures/Plot_Counts/plot_count_top15_upregulated_3.png", width = 5, height = 6)
+
+# Adjust layout for 15 plots (3 rows, 5 columns)
+par(mfrow = c(3, 5))  
+
+# Create a count plot for each top upregulated gene
+for (i in 1:length(top15_upreg_genes)) {
+    gene <- top15_upreg_genes[i]  # Get the gene ID
+    gene_symbol <- top15_upreg_label[i]  # Get the corresponding gene symbol
+    
+    # Plot count data with gene symbol as title
+    plotCounts(dds, gene = gene, intgroup = "Condition", main = gene_symbol)
+}
+
+# Reset layout to default (1 plot per page)
+par(mfrow = c(1, 1))  
+
+# Close the graphics device
+dev.off()
+
+# Count plots zoomed in
+# Iterate over top15_upreg_genes and save each count plot separately
+for (i in 1:length(top15_upreg_genes)) {
+    gene <- top15_upreg_genes[i]  # Get the gene ID
+    gene_symbol <- top15_upreg_label[i]  # Get the corresponding gene symbol
+    
+    # Define the file name for each plot
+    file_name <- paste0("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/Figures/Plot_counts/plot_count_", gene_symbol, ".png")
+    
+    # Save the plot as PNG with specified width and height
+    png(file_name, width = 400, height = 600)
+    
+    # Create a count plot for the current gene
+    plotCounts(dds, gene = gene, intgroup = "Condition", main = gene_symbol)
+    
+    # Close the graphics device (save the plot)
+    dev.off()
+}

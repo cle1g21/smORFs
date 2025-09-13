@@ -1,4 +1,6 @@
-# Same code as volcano for DEGs but instead used matched nuORFs differentially expressed in BRCA
+# Mapped ensembl IDs to gene symbols - write file nuORFs_gene_symbols_CESC.csv
+# Found top upregulated and downregulated
+# Volcano plot of differentially expressed nuORFs
 
 # Load libraries
 library(tidyverse)
@@ -6,7 +8,7 @@ library(ggrepel)
 library(org.Hs.eg.db)
 
 # read in DESeq2 results for BRCA dataset
-res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/BRCA/nuORFs_matched_BRCA.txt", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
+res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/nuORFs_matched_BRCA.txt", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
 View(res)
 
 # Map Ensembl IDs to Gene Symbols
@@ -24,8 +26,7 @@ res$gene_symbol <- gene_symbols
 # Replace missing gene symbols with Ensembl IDs
 res$label <- ifelse(is.na(res$gene_symbol), rownames(res), res$gene_symbol)
 
-write.table(res, file = "/lyceum/cle1g21/smORFs/TCGA/BRCA/nuORFs_gene_symbols_BRCA.csv", sep = "\t", row.names = TRUE)
-
+write.table(res, file = "/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/nuORFs_gene_symbols_BRCA.csv", sep = "\t", row.names = TRUE)
 
 # Selects top 15 DEGs
 top15_upreg <- res |> 
@@ -82,7 +83,7 @@ volcano <- ggplot() +
 
 print(volcano)
 
-ggsave("/lyceum/cle1g21/smORFs/TCGA/BRCA/volcano_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
+ggsave("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/Figures/volcano_nuORFs_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
 
 # MYOM1 downregulated and highly significant seen to be commonly dysregulated in various cancers:
 # LI, M., SUN, Q. & WANG, X. 2017. Transcriptional landscape of human cancers. Oncotarget, 8, 34534-34551.

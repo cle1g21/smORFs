@@ -1,12 +1,10 @@
-# Volcano plot DEGs CHOL
-
 # Load libraries
 library(tidyverse)
 library(ggrepel)
 library(org.Hs.eg.db)
 
 # read in DESeq2 results for BRCA dataset
-res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/CHOL/DESeq2results_CHOL_filtered_variants.txt", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
+res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/CHOL/Outputs/DESeq2results_CHOL_filtered_variants.txt", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
 View(res)
 
 # Map Ensembl IDs to Gene Symbols
@@ -79,4 +77,14 @@ volcano <- ggplot() +
 
 print(volcano)
 
-ggsave("/lyceum/cle1g21/smORFs/TCGA/CHOL/volcano_DEGS_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
+ggsave("/lyceum/cle1g21/smORFs/TCGA/CHOL/Outputs/Figures/volcano_DEGS_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
+
+# Count significantly upregulated DEGs (FDR < 0.05 and log2FC > 1)
+n_up <- sum(res$padj < 0.05 & res$log2FoldChange > 1, na.rm = TRUE)
+
+# Count significantly downregulated DEGs (FDR < 0.05 and log2FC < -1)
+n_down <- sum(res$padj < 0.05 & res$log2FoldChange < -1, na.rm = TRUE)
+
+# Combine results
+cat("Significantly upregulated DEGs:", n_up, "\n")
+cat("Significantly downregulated DEGs:", n_down, "\n")

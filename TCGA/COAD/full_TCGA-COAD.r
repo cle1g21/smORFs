@@ -1,4 +1,3 @@
-# no matches
 library(GEOquery)
 library(DESeq2)
 library(dplyr)
@@ -66,6 +65,9 @@ dds <- DESeqDataSetFromMatrix(countData = cts_clean,
                               design = ~Condition)
 dds
 
+ncol(dds)
+table(dds$Condition)
+
 #PCA plot to check replicates
 #rld <- rlog(dds)
 #png(filename = "pca.png", width = 600, height = 600) #save PCA plot
@@ -74,6 +76,8 @@ dds
 
 # Run DESeq2
 dds <- DESeq(dds) # 15 minutes to run
+saveRDS(dds, file = paste0("/lyceum/cle1g21/smORFs/TCGA/COAD/Outputs/dds.rds"))
+
 res <- results(dds)
 print(res) # prints the first few rows of the DESeq2 results
 summary(res)  # provides a summary of the DESeq2 results 
@@ -127,3 +131,57 @@ str(resOrdered_nuORFs)
 
 # save file of matching nuORFs
 write.table(resOrdered_nuORFs, file = "/lyceum/cle1g21/smORFs/TCGA/COAD/nuORFs_matched_COAD.txt", sep = "\t", row.names = TRUE)
+
+# apply filter only keeping lncRNAs with low expression in control so no off target effects if they are seen in immunopeptodmics data
+# 1st plot counts
+# 2nd volcano plots -----------------------------------------------------------------------------
+
+# For gene titles in count plots:
+rownames(dds) <- sub("\\..*", "", rownames(dds))  # Remove everything after the first dot
+
+# Attempt for top 15 upregulated from volcano plot
+# Load the top15_upreg CSV file
+top15_upreg <- read.csv("/lyceum/cle1g21/smORFs/TCGA/COAD/Outputs/top15upreg_lncRNA_matched_nuORFs.csv", header = TRUE)
+
+top15_upreg_genes <- top15_upreg$Gene_ID
+top15_upreg_label <- top15_upreg$label
+
+# Save plot as PNG
+png("/lyceum/cle1g21/smORFs/TCGA/COAD/Outputs/Figures/Plot_Counts/plot_count_top15_upregulated_1.png", width = 800, height = 600)
+
+# Adjust layout for 15 plots (3 rows, 5 columns)
+par(mfrow = c(3, 5))  
+
+# Create a count plot for each top upregulated gene
+for (i in 1:length(top15_upreg_genes)) {
+    gene <- top15_upreg_genes[i]  # Get the gene ID
+    gene_symbol <- top15_upreg_label[i]  # Get the corresponding gene symbol
+    
+    # Plot count data with gene symbol as title
+    plotCounts(dds, gene = gene, intgroup = "Condition", main = gene_symbol)
+}
+
+# Reset layout to default (1 plot per page)
+par(mfrow = c(1, 1))  
+
+# Close the graphics device
+dev.off()
+
+# Count plots zoomed in
+# Iterate over top15_upreg_genes and save each count plot separately
+for (i in 1:length(top15_upreg_genes)) {
+    gene <- top15_upreg_genes[i]  # Get the gene ID
+    gene_symbol <- top15_upreg_label[i]  # Get the corresponding gene symbol
+    
+    # Define the file name for each plot
+    file_name <- paste0("/lyceum/cle1g21/smORFs/TCGA/COAD/Outputs/Figures/Plot_Counts/plot_count_", gene_symbol, ".png")
+    
+    # Save the plot as PNG with specified width and height
+    png(file_name, width = 800, height = 600)
+    
+    # Create a count plot for the current gene
+    plotCounts(dds, gene = gene, intgroup = "Condition", main = gene_symbol)
+    
+    # Close the graphics device (save the plot)
+    dev.off()
+}

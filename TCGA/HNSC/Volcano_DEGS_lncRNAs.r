@@ -1,31 +1,49 @@
-# Change ensmbl IDs to gene symbols ->
-# Selected top 15 up and down regulated ->
-# Ggplot for volcano plot for DESEQ2 results for BRCA
-
-# Load libraries
-library(tidyverse)
-library(ggrepel)
 library(org.Hs.eg.db)
 library(biomaRt)
 
-# read in DESeq2 results for BRCA dataset
-res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/DESeq2results_BRCA_filtered_variants.txt", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
+# read in DESeq2 results for BLCA dataset
+res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/HNSC/Outputs/DESeq2results_HNSC_filtered_variants.txt", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
 View(res)
 
-# Map Ensembl IDs to Gene Symbols
-gene_symbols <- mapIds(
-  org.Hs.eg.db,           
-  keys = row.names(res),  
-  column = "SYMBOL",        # Retrieve gene symbols
-  keytype = "ENSEMBL",      # Use Ensembl IDs as input
-  multiVals = "first"       # Use the first match if multiple exist
+# Filter res to include lncRNAs only from bioMart
+# Connect to Ensembl using biomaRt
+ensembl <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+
+# Retrieve Ensembl IDs and gene symbols for lncRNAs
+lncRNA_info <- getBM(
+    attributes = 
+    c("ensembl_gene_id",  # Ensembl IDs
+    "external_gene_name", # Gene symbols
+    "gene_biotype"),      # lncRNAs
+    filters = "ensembl_gene_id",
+    values = rownames(res),
+    mart = ensembl
 )
 
-# Add gene symbols to the DESeq2 results (res)
-res$gene_symbol <- gene_symbols
+# Filter for lncRNAs only
+lncRNA_info <- subset(lncRNA_info, gene_biotype == "lncRNA")
 
-# Replace missing gene symbols with Ensembl IDs
-res$label <- ifelse(is.na(res$gene_symbol), rownames(res), res$gene_symbol)
+# Merge with DESeq2 results
+res_lncRNA <- res[rownames(res) %in% lncRNA_info$ensembl_gene_id, ]
+
+# Add gene symbols to lncRNA filtered DESeq2 results
+res_lncRNA$gene_symbol <- lncRNA_info$external_gene_name[match(rownames(res_lncRNA), lncRNA_info$ensembl_gene_id)]
+
+res_lncRNA$label <- ifelse(is.na(res_lncRNA$gene_symbol) | res_lncRNA$gene_symbol == "", rownames(res_lncRNA), res_lncRNA$gene_symbol)
+View(res_lncRNA)
+
+# remove gene_symbol column as content is now in label column
+res_lncRNA$gene_symbol <- NULL
+
+# Save Gene Symbol Mapping for count plots on full_TCGA_BRCA.r
+gene_labels <- setNames(lncRNA_info$external_gene_name, lncRNA_info$ensembl_gene_id)
+# Save as an RDS file (R's native format for saving objects)
+saveRDS(gene_labels, file = "/lyceum/cle1g21/smORFs/TCGA/HNSC/Outputs/gene_labels.rds")
+
+write.table(res_lncRNA, file = "/lyceum/cle1g21/smORFs/TCGA/HNSC/Outputs/DEGS_lncRNAs_HNSC.csv", sep = "\t", row.names = TRUE)
+
+res <- read.delim("/lyceum/cle1g21/smORFs/TCGA/HNSC/Outputs/DEGS_lncRNAs_HNSC.csv", header = TRUE, row.names = 1, stringsAsFactors = FALSE)
+View(res)
 
 # Selects top 15 DEGs
 top15_upreg <- res |> 
@@ -34,7 +52,6 @@ top15_upreg <- res |>
   slice_head(n = 15) |>                    # Top 15 genes
   mutate(Expression = "downregulated") |>                
   rownames_to_column(var = "Gene_ID")           
-"ENSG00000034971" %in% row.names(res) # Checked this worked by confirming presence of top15DEG in res
 
 top15_downreg <- res |> 
   filter(padj < 0.05, log2FoldChange > 0) |>         # Significant up-regulated genes in BRCA
@@ -83,15 +100,4 @@ volcano <- ggplot() +
 
 print(volcano)
 
-ggsave("/lyceum/cle1g21/smORFs/TCGA/BRCA/Outputs/Figures/volcano_DEGS_2.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
-
-
-# Count significantly upregulated DEGs (FDR < 0.05 and log2FC > 1)
-n_up <- sum(res$padj < 0.05 & res$log2FoldChange > 1, na.rm = TRUE)
-
-# Count significantly downregulated DEGs (FDR < 0.05 and log2FC < -1)
-n_down <- sum(res$padj < 0.05 & res$log2FoldChange < -1, na.rm = TRUE)
-
-# Combine results
-cat("Significantly upregulated DEGs:", n_up, "\n")
-cat("Significantly downregulated DEGs:", n_down, "\n")
+ggsave("/lyceum/cle1g21/smORFs/TCGA/HNSC/Outputs/Figures/volcano_DEGS_only_lncRNA_1.png", plot = volcano, width = 8, height = 6, dpi = 300, bg = "white")
