@@ -7,3 +7,7 @@
 # huge artifacts
 my_environment.RData
 *.sif
+
+# huge artifacts
+my_environment.RData
+*.sif
